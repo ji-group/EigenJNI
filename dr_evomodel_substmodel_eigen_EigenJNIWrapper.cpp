@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-#define EIGEN_DEBUG_FLOW
+//#define EIGEN_DEBUG_FLOW
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> MatrixXd;
 typedef Eigen::EigenSolver<MatrixXd> EigenSolver;
 
@@ -57,26 +57,49 @@ public:
                               double* eigenValues,
                               double* eigenVectors,
                               double* inverseEigenVectors) {
+#ifdef EIGEN_DEBUG_FLOW
+        std::cerr<< "Entering getEigenDecomposition:" << std::endl;
+#endif
+
         EigenSolver es(matrices[matrix]);
         eigenSolvers[matrix] = es;
 
-        Eigen::MatrixXcd inverseV = es.eigenvectors().inverse();
+        MatrixXd V = es.pseudoEigenvectors();
+        MatrixXd inverseV = es.pseudoEigenvectors().inverse();
+#ifdef EIGEN_DEBUG_FLOW
+        std::cerr<< "The eigenvalues of Matrix are:" << std::endl << es.pseudoEigenvalueMatrix() << std::endl;
+        std::cerr<< "The matrix of eigenvectors, V, is:" << std::endl << es.pseudoEigenvectors() << std::endl << std::endl;
+        std::cerr<< "The matrix of inverse eigenvectors, invV, is:" << std::endl << inverseV << std::endl << std::endl;
+#endif
+        bool complexPair = false;
         for (int i = 0; i < kState; i++) {
-            eigenValues[2 * i] = es.eigenvalues()[i].real();
-            eigenValues[2 * i + 1] = es.eigenvalues()[i].imag();
-            for (int j = 0; j < kState; j++) {
-                eigenVectors[2 * kState * i + 2 * j] = es.eigenvectors().col(i)[j].real();
-                eigenVectors[2 * kState * i + 2 * j + 1] = es.eigenvectors().col(i)[j].imag();
-
-                inverseEigenVectors[2 * kState * i + 2 * j] = inverseV.col(i)[j].real();
-                inverseEigenVectors[2 * kState * i + 2 * j + 1] = inverseV.col(i)[j].imag();
+            eigenValues[i] = es.pseudoEigenvalueMatrix().col(i)[i];
+            if (complexPair) {
+                eigenValues[kState + i] = es.pseudoEigenvalueMatrix().col(i - 1)[i];
+                complexPair = false;
+            } else {
+                double nextValue = i < kState - 1 ? es.pseudoEigenvalueMatrix().col(i + 1)[i] : 0;
+                if (nextValue != 0) {
+                    complexPair = true;
+                    eigenValues[kState + i] = nextValue;
+                } else {
+                    eigenValues[kState + i] = 0;
+                }
             }
+            for (int j = 0; j < kState; j++) {
+                eigenVectors[kState * i + j] = V.col(j)[i];
+                inverseEigenVectors[kState * i + j] = inverseV.col(j)[i];
+            }
+#ifdef EIGEN_DEBUG_FLOW
+            std::cerr<< "The " << i <<"th eigenvalue :" << std::endl << eigenValues[i] << "," << eigenValues[i + kState] << std::endl;
+#endif
+
         }
 
 #ifdef EIGEN_DEBUG_FLOW
-        std::cerr<< "The eigenvalues of Matrix are:" << std::endl << es.eigenvalues() << std::endl;
-        std::cerr<< "The matrix of eigenvectors, V, is:" << std::endl << es.eigenvectors() << std::endl << std::endl;
-        std::cerr<< "The matrix of inverse eigenvectors, invV, is:" << std::endl << es.eigenvectors().inverse() << std::endl << std::endl;
+        std::cerr<< "The eigenvalues of Matrix are:" << std::endl << es.pseudoEigenvalueMatrix() << std::endl;
+        std::cerr<< "The matrix of eigenvectors, V, is:" << std::endl << es.pseudoEigenvectors() << std::endl << std::endl;
+        std::cerr<< "The matrix of inverse eigenvectors, invV, is:" << std::endl << inverseV << std::endl << std::endl;
 #endif
 
         return EIGEN_SUCCESS;
