@@ -18,10 +18,10 @@ JNIEXPORT jint JNICALL Java_dr_evomodel_substmodel_eigen_EigenJNIWrapper_createI
 /*
  * Class:     dr_evomodel_substmodel_eigen_EigenJNIWrapper
  * Method:    setMatrix
- * Signature: (I[I[DI)I
+ * Signature: (I[I[DII)I
  */
 JNIEXPORT jint JNICALL Java_dr_evomodel_substmodel_eigen_EigenJNIWrapper_setMatrix
-  (JNIEnv *, jobject, jint, jintArray, jdoubleArray, jint);
+  (JNIEnv *, jobject, jint, jintArray, jdoubleArray, jint, jint);
 
 /*
  * Class:     dr_evomodel_substmodel_eigen_EigenJNIWrapper

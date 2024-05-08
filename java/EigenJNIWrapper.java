@@ -20,12 +20,13 @@ public class EigenJNIWrapper {
     public native int setMatrix(int matrix,
                                 int[] indices,
                                 double[] values,
-                                int nonZeroCount);
+                                int nonZeroCount,
+                                int stateCount);
 
     public native String getVersion();
 
     public native int getEigenDecomposition(int matrix,
                                             double[] eigenValues,
-                                            double[][] eigenVectors,
-                                            double[][] inverseEigenVectors);
+                                            double[] eigenVectors,
+                                            double[] inverseEigenVectors);
 }

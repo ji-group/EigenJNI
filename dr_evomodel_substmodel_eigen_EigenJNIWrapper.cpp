@@ -28,7 +28,7 @@ public:
         eigenSolvers = new EigenSolver [matrixCount];
         kState = stateCount;
         for (int i = 0; i < matrixCount; i++) {
-            MatrixXd  matrix(stateCount, stateCount);
+            MatrixXd matrix(stateCount, stateCount);
             matrix.setZero();
             matrices[i] = matrix;
         }
@@ -38,17 +38,34 @@ public:
     int setMatrix(int matrix,
                   int* indices,
                   double* values,
-                  int nonZeroCount) {
+                  int nonZeroCount,
+                  int stateCount) {
 #ifdef EIGEN_DEBUG_FLOW
-        std::cerr<< "Entering setMatrix" << std::endl;
+        std::cerr<< "Entering setMatrix with size (" << matrices[matrix].rows() << ", " << matrices[matrix].cols() << ")" << std::endl;
 #endif
+        if (stateCount != kState) {
+            kState = stateCount;
+            matrices[matrix].resize(stateCount, stateCount);
+#ifdef EIGEN_DEBUG_FLOW
+            std::cerr<< "Resize matrix to size (" << matrices[matrix].rows() << ", " << matrices[matrix].cols() << ")" << std::endl;
+#endif
+        }
         matrices[matrix].setZero();
+
+#ifdef EIGEN_DEBUG_FLOW
+        std::cerr<< "Clear matrix " << matrix << " :" << std::endl;
+//        std::cerr<< matrices[matrix] << std::endl;
+#endif
 
         for (int i = 0; i < nonZeroCount; i++) {
             matrices[matrix](indices[2 * i], indices[2 * i + 1]) = values[i];
+#ifdef EIGEN_DEBUG_FLOW
+            std::cerr<< "Set matrix "<< i <<"th non-zero entry (" << indices[2 * i] << ", " << indices[2 * i + 1] << matrix << ") :" << values[i] << std::endl;
+            std::cerr<< "Next "<< i+1 <<"th non-zero entry (" << indices[2 * (i + 1)] << ", " << indices[2 * (i + 1) + 1] << matrix << ") :" << values[i + 1] << std::endl;
+#endif
         }
 #ifdef EIGEN_DEBUG_FLOW
-        std::cerr<< "Matrix:" << std::endl << matrices[matrix] << std::endl <<std::endl;
+        std::cerr<< "Matrix:" << matrix  << " set." << std::endl;
 #endif
         return EIGEN_SUCCESS;
     }
@@ -67,7 +84,7 @@ public:
         MatrixXd V = es.pseudoEigenvectors();
         MatrixXd inverseV = es.pseudoEigenvectors().inverse();
 #ifdef EIGEN_DEBUG_FLOW
-        std::cerr<< "The eigenvalues of Matrix are:" << std::endl << es.pseudoEigenvalueMatrix() << std::endl;
+        std::cerr<< "The eigenvalues of Matrix are:" << std::endl << es.pseudoEigenvalueMatrix().diagonal() << std::endl;
         std::cerr<< "The matrix of eigenvectors, V, is:" << std::endl << es.pseudoEigenvectors() << std::endl << std::endl;
         std::cerr<< "The matrix of inverse eigenvectors, invV, is:" << std::endl << inverseV << std::endl << std::endl;
 #endif
@@ -149,17 +166,18 @@ JNIEXPORT jint JNICALL Java_dr_evomodel_substmodel_eigen_EigenJNIWrapper_createI
     return errorCode;
 }
 
+
 /*
  * Class:     dr_evomodel_substmodel_eigen_EigenJNIWrapper
  * Method:    setMatrix
- * Signature: (I[I[DI)I
+ * Signature: (I[I[DII)I
  */
 JNIEXPORT jint JNICALL Java_dr_evomodel_substmodel_eigen_EigenJNIWrapper_setMatrix
-        (JNIEnv * env, jobject obj, jint matrix, jintArray inIndices, jdoubleArray inValues, jint nonZeroCount) {
+        (JNIEnv * env, jobject obj, jint matrix, jintArray inIndices, jdoubleArray inValues, jint nonZeroCount, jint stateCount) {
     jint *indices = env -> GetIntArrayElements(inIndices, NULL);
     jdouble *values = env ->GetDoubleArrayElements(inValues, NULL);
 
-    jint errorCode = (jint) instances[0] -> setMatrix(matrix, indices, values, nonZeroCount);
+    jint errorCode = (jint) instances[0] -> setMatrix(matrix, indices, values, nonZeroCount, stateCount);
 
     env -> ReleaseDoubleArrayElements(inValues, values, JNI_ABORT);
     env ->ReleaseIntArrayElements(inIndices, indices, JNI_ABORT);
