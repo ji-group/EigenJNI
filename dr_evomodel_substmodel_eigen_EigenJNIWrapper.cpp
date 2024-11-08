@@ -6,6 +6,7 @@
 #include <Eigen/Core>
 
 #include <iostream>
+#include <memory>
 
 //#define EIGEN_DEBUG_FLOW
 typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> MatrixXd;
